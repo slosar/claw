@@ -9,7 +9,8 @@ flatWeight=True
 zeroPower=True
 Ng=10000
 Ngtest=1000
-pname="./MeasureCl_%i_%i_%i.pickle"%(flatWeight,zeroPower,Ng)
+ignorem0=True
+pname="./MeasureCl_%i_%i_%i_%i.pickle"%(flatWeight,zeroPower,Ng,ignorem0)
 
 
 def main():
@@ -40,7 +41,7 @@ def getMeasureCl(ClT,weight,noise):
         print("Loading pickled version... (delete ",pname,"if changing params.")
         M=cp.load(open(pname))
     else:
-        M=claw.MeasureCl(ClT,weight,noise,Ng=Ng)
+        M=claw.MeasureCl(ClT,weight,noise,Ng=Ng,ignorem0=ignorem0)
         print ("Getting noise bias...")
         M.getNoiseBias()
         if flatWeight:
