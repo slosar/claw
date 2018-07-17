@@ -9,7 +9,7 @@ import healpy as hp
 import scipy.linalg as la
 import copy
 class MeasureCl:
-    def __init__(self, Cl, Weight, Noise,Ng=1000,Noise2=None,Weight2=None, ignorem0=False):
+    def __init__(self, Cl, Weight, Noise,Ng=1000,Noise2=None,Weight2=None, ignorem0=False,narowcoupling=False):
         """
           When initializing, set it up with Cl object for binning
           and cov matrix prediction.
@@ -20,10 +20,11 @@ class MeasureCl:
           
         self.Cl=copy.deepcopy(Cl)
         self.ignorem0=ignorem0
+        self.narowcoupling=narowcoupling
         self.Weight=Weight
         self.Noise=Noise
         self.Nside=Cl.Nside
-        self.lmax=self.Nside*3-1
+        self.lmax=Cl.lmaxs#self.Nside*3-1
         self.Npix=12*self.Nside**2
         self.nbins=self.Cl.nbins
         self.mbins=self.nbins+1 ## mbins includes the edge bin that we are throwing away
@@ -52,7 +53,7 @@ class MeasureCl:
         if addN:
             mp+=np.random.normal(0,self.Noise)
         mp*=self.Weight
-        almsq=abs(hp.map2alm(mp)**2)
+        almsq=abs(hp.map2alm(mp,lmax=self.lmax)**2)
         if self.ignorem0:
             almsq=np.delete(almsq,self.m0indices)
         return self.bnorm*np.bincount(self.binlist,weights=almsq)
@@ -63,7 +64,7 @@ class MeasureCl:
             mp2+=np.random.normal(0,self.Noise2)
         mp1*=self.Weight
         mp2*=self.Weight2
-        cross_almsq=(hp.map2alm(mp1)*np.conjugate(hp.map2alm(mp2))).real
+        cross_almsq=(hp.map2alm(mp1,lmax=self.lmax)*np.conjugate(hp.map2alm(mp2,lmax=self.lmax))).real
         if self.ignorem0:
             cross_almsq=np.delete(cross_almsq,self.m0indices)
         return self.bnorm*np.bincount(self.binlist,weights=cross_almsq)
@@ -108,6 +109,11 @@ class MeasureCl:
                 m=hp.synfast(clx,self.Nside,verbose=False)
                 cmat[i,:]+=self._getcrossIM(m,m)
         self.coupmat=cmat/self.Ng
+        if self.narowcoupling:
+            for j in range(irange):
+                indx=np.arange(self.nbins)
+                indx=np.delete(indx,np.array([j-2,j-1,j,j+1,j+2]))
+                self.coupmat[j,:][indx]=0
         self.icoupmat=la.inv(self.coupmat)
 
     def getCovMat(self,thCl=None):
