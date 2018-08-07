@@ -99,6 +99,7 @@ class MeasureCl:
     def getcrossCouplingMat(self):
         cmat=np.zeros((self.mbins-1,self.mbins-1))
         irange=self.mbins-1
+        self.cmatsamples=np.zeros((self.Ng,self.mbins-1, self.mbins-1))
         for i in range(irange):
             for cc in range(self.Ng):
                 clx=np.zeros(self.lmax+1)
@@ -107,13 +108,16 @@ class MeasureCl:
                 else:
                     clx[self.Cl.lmin[i]:self.Cl.lmax[i]]=1.0
                 m=hp.synfast(clx,self.Nside,verbose=False)
-                cmat[i,:]+=self._getcrossIM(m,m)
+                t=self._getcrossIM(m,m)
+                self.cmatsamples[cc,i,:]=t
+                cmat[i,:]+=t
         self.coupmat=cmat/self.Ng
         if self.narowcoupling:
-            for j in range(irange):
-                indx=np.arange(self.nbins)
-                indx=np.delete(indx,np.array([j-2,j-1,j,j+1,j+2]))
-                self.coupmat[j,:][indx]=0
+            ## this is idiotic, but still very fast
+            for j in range(mbins):
+                for i in range(mbins):
+                    if (abs(j-i)>2):
+                        self.coupmat[i,j]=0.0
         self.icoupmat=la.inv(self.coupmat)
 
     def getCovMat(self,thCl=None):
@@ -160,9 +164,12 @@ class MeasureCl:
         return self.Cl
     
     
-    def getcrossEstimate(self,mp1,mp2):
+    def getcrossEstimate(self,mp1,mp2,return_raw=False):
         if not hasattr(self,"coupmat"):
             self.getcrossCouplingMat()
         v=self._getcrossIM(mp1,mp2)
         self.Cl.setVals(np.dot(self.icoupmat,v))
-        return self.Cl
+        if return_raw:
+            return v
+        else:
+            return self.Cl
