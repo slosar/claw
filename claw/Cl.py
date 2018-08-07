@@ -18,15 +18,17 @@ class Cl:
             lmin=[1]+list((0.5*(lcent[1:]+lcent[:-1])).astype(int))
             lmax=lmin[1:]+[lcent[-1]+lcent[-1]-lmin[-1]]
         else:
-            lmax,dl=lmaxdl
+            lmax,dl=lmaxdl          #actualy lmax+1 has to be entered (number of l values in the original power spectrum)
             nb=int(lmax/dl)
             lmin=dl*np.arange(nb)
             lmax=dl*(1+np.arange(nb))
             lcent=(lmin+lmax-1)/2.
-            if (dl>1):
-                lmin[0]=1
+            #if (dl>1):
+            #    lmin[0]=1
         # now adjust last bin until we have full
         # ell coverage to avoid aliasing
+        self.dl=lmaxdl[1]
+        self.lmaxs=lmaxdl[0]-1
         self.lmin=lmin
         self.lmax=lmax
         if Nside is not None:
@@ -43,8 +45,8 @@ class Cl:
         if cov is not None:
             self.setCov(cov)
 
-        self.ndx=np.zeros(self.Nside*3,np.int)+self.nbins ## non-bins go to the lastone
-        self.Cl=np.zeros(self.Nside*3)
+        self.ndx=np.zeros((self.lmaxs+1),np.int)+self.nbins ## non-bins go to the lastone
+        self.Cl=np.zeros(self.lmaxs+1)
         for i,v,l1,l2 in zip (np.arange(self.nbins),self.vals,self.lmin, self.lmax):
             self.ndx[l1:l2]=i
             self.Cl[l1:l2]=v
